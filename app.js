@@ -43,7 +43,7 @@ io.on('connection', (sock) => {
     socket.on('disconnect', () => {
       socket.leave('lobby');
       delete players[socket.player.hash];
-      socket.emit('recievePlayerCount', Object.keys(players).length);
+      io.in('lobby').emit('recievePlayerCount', Object.keys(players).length);
     });
 });
 
