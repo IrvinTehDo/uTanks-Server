@@ -1,0 +1,16 @@
+{
+  "name": "socket_io_swift_ex",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./app.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "socket.io": "^2.1.0",
+    "xxhashjs": "^0.2.2"
+  }
+}
