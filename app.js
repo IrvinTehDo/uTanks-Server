@@ -4,7 +4,17 @@ const fs = require('fs');
 const xxh = require('xxhashjs');
 const port = process.env.PORT || process.env.NODE_PORT || 55555;
 
-const app = http.createServer();
+const handler = (req, res) => {
+  fs.readFile(`${__dirname}/index.html`, (err, data) => {
+    if (err) {
+      throw err;
+    }
+    res.writeHead(200);
+    res.end(data);
+  });
+};
+
+const app = http.createServer(handler);
 
 app.listen(port);
 
@@ -18,7 +28,6 @@ io.on('connection', (sock) => {
       hash: xxh.h32(`${socket.id}${new Date().getTime()}`, 0xCAFEBABE).toString(16),
       lastUpdate: new Date().getTime(),
       roomName: 'lobby',
-      someWord: 'string',
     };
 
     players[socket.player.hash] = socket.player;
