@@ -146,7 +146,7 @@ io.on('connection', (sock) => {
   socket.roomJoined = 'lobby';
   console.log(`new socket has joined with hash of ${socket.hash}`);
   rooms.lobby.players[socket.hash] = socket.player;
-  socket.emit('joined', socket.player, rooms.lobby);
+  socket.emit('joined', socket.player, rooms.lobby, socket.hash);
   io.in('lobby').emit('recievePlayerCount', Object.keys(rooms.lobby.players).length);
 
   socket.on('getPlayerCount', () => {
