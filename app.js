@@ -195,14 +195,15 @@ io.on('connection', (sock) => {
   });
 
   socket.on('movementUpdate', (data) => {
-    socket.player = data;
-    socket.player.lastUpdate = new Date().getTime();
-
-    if (!socket.player || !socket.player.alive) {
-      return;
-    }
-
-    socket.broadcast.to(socket.player.roomName).emit('updatedMovement', socket.player);
+    console.dir(data);
+    //    socket.player = data;
+    //    socket.player.lastUpdate = new Date().getTime();
+    //
+    //    if (!socket.player || !socket.player.alive) {
+    //      return;
+    //    }
+    //
+    //    socket.broadcast.to(socket.player.roomName).emit('updatedMovement', socket.player);
   });
 
   socket.on('joinQueue', () => {
