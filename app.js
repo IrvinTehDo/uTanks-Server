@@ -129,10 +129,10 @@ io.on('connection', (sock) => {
     console.log(`new socket has joined with hash of ${socket.hash}`);
     rooms.lobby.players[socket.hash] = socket.player;
     socket.emit('joined', socket.player, rooms.lobby);
-    io.in('lobby').emit('recievePlayerCount', Object.keys(players).length);
+    io.in('lobby').emit('recievePlayerCount', Object.keys(room.lobby.players).length);
 
     socket.on('getPlayerCount', () => {
-      socket.emit('recievePlayerCount', Object.keys(players).length);
+      socket.emit('recievePlayerCount', Object.keys(room.lobby.players).length);
     });
 
     socket.on('createRoom', (roomName) => {
@@ -179,8 +179,8 @@ io.on('connection', (sock) => {
 
     socket.on('disconnect', () => {
       socket.leave('lobby');
-      delete players[socket.player.hash];
-      io.in('lobby').emit('recievePlayerCount', Object.keys(players).length);
+      delete room.lobby.players[socket.player.hash];
+      io.in('lobby').emit('recievePlayerCount', Object.keys(room.lobby.players).length);
     });
 });
 
