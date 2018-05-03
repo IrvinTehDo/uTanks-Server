@@ -210,6 +210,10 @@ io.on('connection', (sock) => {
     socket.broadcast.to('lobby').emit('updatedMovement', socket.hash, socket.player.x, socket.player.y, socket.player.directionX, socket.player.directionY);
   });
 
+  socket.on('makeBullet', (data) => {
+    socket.broadcast.to('lobby').emit('recieveBullet', data.x, data.y, data.facingAngle, data.directionX, data.directionY);
+  });
+
   socket.on('joinQueue', () => {
     addToQueue(socket, io);
   });
