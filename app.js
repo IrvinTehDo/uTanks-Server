@@ -194,7 +194,7 @@ io.on('connection', (sock) => {
   });
 
   socket.on('movementUpdate', (data) => {
-    console.dir(data);
+    //    console.dir(data);
     socket.player.x = data.x;
     socket.player.y = data.y;
     socket.player.directionX = data.directionX;
@@ -211,6 +211,7 @@ io.on('connection', (sock) => {
   });
 
   socket.on('makeBullet', (data) => {
+    console.dir(data);
     socket.broadcast.to('lobby').emit('recieveBullet', data.x, data.y, data.facingAngle, data.directionX, data.directionY);
   });
 
