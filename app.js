@@ -133,11 +133,10 @@ io.on('connection', (sock) => {
 
   socket.player = {
     lastUpdate: new Date().getTime(),
-    prevX: 0,
-    prevY: 0,
-    destX: 0,
-    destY: 0,
-    alpha: 0,
+    x: 0,
+    y: 0,
+    directionX: 0,
+    directionY: 0,
     heigth: 100,
     width: 100,
     isAlive: false,
@@ -196,6 +195,10 @@ io.on('connection', (sock) => {
 
   socket.on('movementUpdate', (data) => {
     console.dir(data);
+    socket.player.x = data.x;
+    socket.player.y = data.y;
+    socket.player.directionX = data.directionX;
+    socket.player.directionY = data.directionY;
     //    socket.player = data;
     //    socket.player.lastUpdate = new Date().getTime();
     //
@@ -204,6 +207,7 @@ io.on('connection', (sock) => {
     //    }
     //
     //    socket.broadcast.to(socket.player.roomName).emit('updatedMovement', socket.player);
+    socket.broadcast.to('lobby').emit('updatedMovement', socket.hash, socket.player.x, socket.player.y, socket.player.directionX, socket.player.directionY);
   });
 
   socket.on('joinQueue', () => {
