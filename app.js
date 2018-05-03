@@ -7,6 +7,8 @@ const port = process.env.PORT || process.env.NODE_PORT || 3000;
 const rooms = {};
 const queue = [];
 
+const roomTimerFuncs = {};
+
 rooms.lobby = {
   roomName: 'lobby',
   players: {},
@@ -36,8 +38,23 @@ const roomInit = (roomName, socket) => {
 
   rooms[roomName] = {
     roomName,
+    status: 'waiting',
+    time: 30,
     players: {},
   };
+
+  roomTimerFuncs[roomName] = setInterval(() => {
+    rooms[roomName].time -= 1;
+    const curRoomStatus = rooms[roomName].status;
+    io.in(roomName).emit('updateTime', rooms[roomName].time, curRoomStatus);
+    if (rooms[roomName].time === 0 && curRoomStatus === 'waiting') {
+      room[roomName].status = 'playing';
+      rooms[roomName].time = 60;
+    } else if (rooms[roomName].time === 0 && curRoomStatus === 'playing') {
+      io.in(roomName).emit('endGame');
+      clearInterval(roomTimerFuncs[roomName]);
+    }
+  }, 1000);
 
   console.log(`Room ${roomName} created`);
   return true;
@@ -51,6 +68,7 @@ const roomJoin = (roomName, socket) => {
 
   socket.leave(socket.roomJoined);
   socket.join(roomName);
+  socket.roomJoined = roomName;
   rooms[roomName].players[socket.hash] = socket.player;
   return true;
 };
@@ -63,7 +81,7 @@ const hashesInQueue = () => {
   }
 
   return tempQueueHashes;
-}
+};
 
 const addToQueue = (socket, io) => {
   queue.push(socket);
@@ -162,7 +180,21 @@ io.on('connection', (sock) => {
       }
     });
 
-    socket.on('playerMovement', (data) => {
+    socket.on('moveToLobby', (roomName) => {
+      delete rooms[roomName].players[socket.hash];
+      socket.player.roomName = 'lobby';
+      rooms.lobby.players[socket.hash] = socket.player;
+
+      socket.join('lobby');
+      socket.roomJoined = 'lobby';
+
+      const playerKeys = Object.keys(rooms[roomName].players);
+      if (playerKeys.length === 0) {
+        delete rooms[roomName];
+      }
+    });
+
+    socket.on('movementUpdate', (data) => {
       socket.player = data;
       socket.player.lastUpdate = new Date().getTime();
 
@@ -178,8 +210,8 @@ io.on('connection', (sock) => {
     });
 
     socket.on('disconnect', () => {
-      socket.leave('lobby');
-      delete room.lobby.players[socket.player.hash];
+      socket.leave(socket.roomJoined);
+      delete room[socket.roomJoined].players[socket.player.hash];
       io.in('lobby').emit('recievePlayerCount', Object.keys(room.lobby.players).length);
     });
 });
@@ -190,6 +222,6 @@ const update = () => {
   setTimeout(update, 20);
 };
 
-update();
+// update();
 
 console.log(`Listening on port: ${port}`);
