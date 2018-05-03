@@ -2,6 +2,7 @@ const http = require('http');
 const socketio = require('socket.io');
 const fs = require('fs');
 const xxh = require('xxhashjs');
+
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
 
 const rooms = {};
@@ -31,7 +32,7 @@ app.listen(port);
 const io = socketio(app);
 
 const roomInit = (roomName, socket) => {
-  if(rooms[roomName]) {
+  if (rooms[roomName]) {
     socket.emit('error', `${roomName} already exists!`);
     return false;
   }
@@ -48,7 +49,7 @@ const roomInit = (roomName, socket) => {
     const curRoomStatus = rooms[roomName].status;
     io.in(roomName).emit('updateTime', rooms[roomName].time, curRoomStatus);
     if (rooms[roomName].time === 0 && curRoomStatus === 'waiting') {
-      room[roomName].status = 'playing';
+      rooms[roomName].status = 'playing';
       rooms[roomName].time = 60;
     } else if (rooms[roomName].time === 0 && curRoomStatus === 'playing') {
       io.in(roomName).emit('endGame');
@@ -61,14 +62,13 @@ const roomInit = (roomName, socket) => {
 };
 
 const roomJoin = (roomName, socket) => {
-  if(!rooms[roomName]) {
+  if (!rooms[roomName]) {
     socket.emit('error', `${roomName} does not exist`);
     return false;
   }
 
   socket.leave(socket.roomJoined);
   socket.join(roomName);
-  socket.roomJoined = roomName;
   rooms[roomName].players[socket.hash] = socket.player;
   return true;
 };
@@ -76,23 +76,23 @@ const roomJoin = (roomName, socket) => {
 const hashesInQueue = () => {
   const tempQueueHashes = [];
 
-  for(let i = 0; i < queue.length; i++) {
+  for (let i = 0; i < queue.length; i++) {
     tempQueueHashes.push(queue[i].hash);
   }
 
   return tempQueueHashes;
 };
 
-const addToQueue = (socket, io) => {
+const addToQueue = (socket) => {
   queue.push(socket);
   io.sockets.in('lobby').emit('updateQueue', hashesInQueue());
 };
 
-const processQueue = (io) => {
+const processQueue = () => {
   const roomKeys = Object.keys(rooms);
 
   if (queue.length <= 3) {
-    for(let i = 0; i < roomKeys.length; i++) {
+    for (let i = 0; i < roomKeys.length; i++) {
       const playerKey = Object.keys(rooms[roomKeys[i]].players);
       if (playerKey.length <= 7 && rooms[roomKeys[i]].roomName !== 'lobby' && queue.length > 0) {
         queue[0].emit('requestToJoin', rooms[roomKeys[i]].roomName);
@@ -124,96 +124,96 @@ const processQueue = (io) => {
 };
 
 io.on('connection', (sock) => {
-    const socket = sock
+  const socket = sock;
 
-    const time = new Date().getTime();
-    const hash = xxh.h32(`${socket.id}${time}`, 0xCAFEBABE).toString(16);
+  const time = new Date().getTime();
+  const hash = xxh.h32(`${socket.id}${time}`, 0xCAFEBABE).toString(16);
 
-    socket.hash = hash;
+  socket.hash = hash;
 
-    socket.player = {
-      lastUpdate: new Date().getTime(),
-      prevX: 0,
-      prevY: 0,
-      destX: 0,
-      destY: 0,
-      alpha: 0,
-      heigth: 100,
-      width: 100,
-      isAlive: false,
-    };
-    socket.join('lobby');
-    socket.roomJoined = 'lobby';
-    console.log(`new socket has joined with hash of ${socket.hash}`);
-    rooms.lobby.players[socket.hash] = socket.player;
-    socket.emit('joined', socket.player, rooms.lobby);
-    io.in('lobby').emit('recievePlayerCount', Object.keys(room.lobby.players).length);
+  socket.player = {
+    lastUpdate: new Date().getTime(),
+    prevX: 0,
+    prevY: 0,
+    destX: 0,
+    destY: 0,
+    alpha: 0,
+    heigth: 100,
+    width: 100,
+    isAlive: false,
+  };
+  socket.join('lobby');
+  socket.roomJoined = 'lobby';
+  console.log(`new socket has joined with hash of ${socket.hash}`);
+  rooms.lobby.players[socket.hash] = socket.player;
+  socket.emit('joined', socket.player, rooms.lobby);
+  io.in('lobby').emit('recievePlayerCount', Object.keys(rooms.lobby.players).length);
 
-    socket.on('getPlayerCount', () => {
-      socket.emit('recievePlayerCount', Object.keys(room.lobby.players).length);
-    });
+  socket.on('getPlayerCount', () => {
+    socket.emit('recievePlayerCount', Object.keys(rooms.lobby.players).length);
+  });
 
-    socket.on('createRoom', (roomName) => {
-      if (roomInit(roomName, socket)) {
-        if(roomJoin(roomName, socket)) {
-          if (socket.roomJoined === 'lobby') {
-            delete rooms.lobby.players[socket.hash];
-          } else {
-            delete rooms[socket.roomJoined].players[socket.hash];
-          }
-          socket.roomJoined = roomName;
-          socket.emit('joined', roomName);
-        }
-      }
-    });
-
-    socket.on('joinRoom', (roomName) => {
-      if(roomJoin(roomName, socket, io)) {
+  socket.on('createRoom', (roomName) => {
+    if (roomInit(roomName, socket)) {
+      if (roomJoin(roomName, socket)) {
         if (socket.roomJoined === 'lobby') {
           delete rooms.lobby.players[socket.hash];
         } else {
           delete rooms[socket.roomJoined].players[socket.hash];
         }
         socket.roomJoined = roomName;
-
         socket.emit('joined', roomName);
       }
-    });
+    }
+  });
 
-    socket.on('moveToLobby', (roomName) => {
-      delete rooms[roomName].players[socket.hash];
-      socket.player.roomName = 'lobby';
-      rooms.lobby.players[socket.hash] = socket.player;
-
-      socket.join('lobby');
-      socket.roomJoined = 'lobby';
-
-      const playerKeys = Object.keys(rooms[roomName].players);
-      if (playerKeys.length === 0) {
-        delete rooms[roomName];
+  socket.on('joinRoom', (roomName) => {
+    if (roomJoin(roomName, socket, io)) {
+      if (socket.roomJoined === 'lobby') {
+        delete rooms.lobby.players[socket.hash];
+      } else {
+        delete rooms[socket.roomJoined].players[socket.hash];
       }
-    });
+      socket.roomJoined = roomName;
 
-    socket.on('movementUpdate', (data) => {
-      socket.player = data;
-      socket.player.lastUpdate = new Date().getTime();
+      socket.emit('joined', roomName);
+    }
+  });
 
-      if (!player || !player.alive) {
-        return;
-      }
+  socket.on('moveToLobby', (roomName) => {
+    delete rooms[roomName].players[socket.hash];
+    socket.player.roomName = 'lobby';
+    rooms.lobby.players[socket.hash] = socket.player;
 
-      socket.broadcast.to(socket.player.roomName).emit('updatedMovement', socket.player);
-    });
+    socket.join('lobby');
+    socket.roomJoined = 'lobby';
 
-    socket.on('joinQueue', () => {
-      addToQueue(socket, io);
-    });
+    const playerKeys = Object.keys(rooms[roomName].players);
+    if (playerKeys.length === 0) {
+      delete rooms[roomName];
+    }
+  });
 
-    socket.on('disconnect', () => {
-      socket.leave(socket.roomJoined);
-      delete room[socket.roomJoined].players[socket.player.hash];
-      io.in('lobby').emit('recievePlayerCount', Object.keys(room.lobby.players).length);
-    });
+  socket.on('movementUpdate', (data) => {
+    socket.player = data;
+    socket.player.lastUpdate = new Date().getTime();
+
+    if (!socket.player || !socket.player.alive) {
+      return;
+    }
+
+    socket.broadcast.to(socket.player.roomName).emit('updatedMovement', socket.player);
+  });
+
+  socket.on('joinQueue', () => {
+    addToQueue(socket, io);
+  });
+
+  socket.on('disconnect', () => {
+    socket.leave(socket.roomJoined);
+    delete rooms[socket.roomJoined].players[socket.player.hash];
+    io.in('lobby').emit('recievePlayerCount', Object.keys(rooms.lobby.players).length);
+  });
 });
 
 const update = () => {
