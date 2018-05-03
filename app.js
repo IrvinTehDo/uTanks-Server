@@ -218,6 +218,10 @@ io.on('connection', (sock) => {
   socket.on('joinQueue', () => {
     addToQueue(socket, io);
   });
+  
+  socket.on('playerHit', (data) => {
+    socket.emit('movePlayer', data.x, data.y);
+  });
 
   socket.on('disconnect', () => {
     socket.leave(socket.roomJoined);
